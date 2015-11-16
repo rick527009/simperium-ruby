@@ -31,10 +31,10 @@ module Simperium
             return {"X-Simperium-API-Key" => "#{@api_key}"}
         end
 
-        def _request(url, data=nil, headers=nil, method=nil)
+        def _request(url, data={}, headers=nil, method=nil)
             @@clnt ||= HTTPClient.new
             url = "#{@scheme}://#{@host}/1/#{url}"
-            return @@clnt.request(method, url, body: data, header:headers)
+            return @@clnt.request(method, url, body: data.to_json, header:headers)
         end
 
         def create(username, password)
@@ -101,7 +101,7 @@ module Simperium
         def _request(url, data=nil, headers=nil, method=:post, timeout=nil)
             @@clnt ||= HTTPClient.new
             url = "#{@scheme}://#{@host}/1/#{url}"
-            return @@clnt.request(method, url, body: data, header:headers)
+            return @@clnt.request(method, url, body: data.to_json, header:headers)
         end
           
         def index(options={})
