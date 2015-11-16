@@ -12,7 +12,7 @@ spec = Gem::Specification.new do |s|
   s.homepage = 'https://simperium.com/docs/reference'
   s.require_paths = %w{lib}
 
-  s.add_dependency('rest-client', '~> 1.4')
+  s.add_dependency('httpclient', '~> 2.7.0.1')
   s.add_dependency('uuid')
   s.add_dependency('json')
 

@@ -1,6 +1,6 @@
 # Simperium Ruby bindings
 # API spec at https://simperium.com/docs/reference
-require 'rest_client'
+require 'httpclient'
 require 'json'
 require 'uuid'
 require 'simperium/error_handling'
@@ -136,52 +136,10 @@ module Simperium
             return ccid.generate(:compact)
         end
 
-        def _request(url, data=nil, headers=nil, method=nil, timeout=nil)
+        def _request(url, data=nil, headers=nil, method=:post, timeout=nil)
+            @@clnt ||= HTTPClient.new
             url = "#{@scheme}://#{@host}/1/#{url}"
-            opts = {:url => url,
-                    :method => :post,
-                    :open_timeout => 30, 
-                    :timeout => 80}
-            
-            if data
-                opts = opts.merge({:payload => data})
-            end
-            
-            if headers.nil?
-                headers = {}
-            end
-            opts = opts.merge({:headers => headers})
-            
-            if method
-                opts = opts.merge({:method => method})
-            end
-            
-            if timeout
-                opts = opts.merge({:timeout => timeout})
-            end
-            
-            begin
-                response = RestClient::Request.execute(opts)
-            rescue SocketError => e
-                ErrorHandling.handle_restclient_error(e)
-            rescue NoMethodError => e
-                if e.message =~ /\WRequestFailed\W/
-                    e = StandardError.new('Unexpected HTTP response code')
-                    ErrorHandling.handle_restclient_error(e)
-                else
-                    raise
-                end
-            rescue RestClient::ExceptionWithResponse => e
-                if rcode = e.http_code and rbody = e.http_body
-                    ErrorHandling.handle_api_error(rcode, rbody)
-                else
-                    ErrorHandling.handle_restclient_error(e)
-                end
-            rescue RestClient::Exception, Errno::ECONNREFUSED => e
-                ErrorHandling.handle_restclient_error(e)
-            end
-
-            return response
+            return clnt.request(method, url, body: data, header:headers)
         end
           
         def index(options={})
