@@ -1,6 +1,6 @@
 # Simperium Ruby bindings
 # API spec at https://simperium.com/docs/reference
-require 'rest_client'
+require 'httpclient'
 require 'json'
 require 'uuid'
 require 'simperium/error_handling'
@@ -31,48 +31,15 @@ module Simperium
             return {"X-Simperium-API-Key" => "#{@api_key}"}
         end
 
-        def _request(url, data=nil, headers=nil, method=nil)
+        def _request(url, data={}, headers={}, method=:post)
+            @@clnt ||= HTTPClient.new
             url = "#{@scheme}://#{@host}/1/#{url}"
-            opts = {:url => url,
-                    :method => :post,
-                    :open_timeout => 30, 
-                    :timeout => 80}
-            
-            if data
-                opts = opts.merge({:payload => data})
+            headers['Content-Type'] = 'application/json'
+            result = @@clnt.request(method, url, query=nil, body=data, extheader=headers)
+            if result.status_code != 200
+              raise StandardError.new("Response code #{result.status_code} received. Debug: #{result.inspect}")
             end
-            
-            if headers.nil?
-                headers = {}
-            end
-            opts = opts.merge({:headers => headers})
-            
-            if method
-                opts = opts.merge({:method => method})
-            end
-            
-            begin
-                response = RestClient::Request.execute(opts)
-            rescue SocketError => e
-                ErrorHandling.handle_restclient_error(e)
-            rescue NoMethodError => e
-                if e.message =~ /\WRequestFailed\W/
-                    e = StandardError.new('Unexpected HTTP response code')
-                    ErrorHandling.handle_restclient_error(e)
-                else
-                    raise
-                end
-            rescue RestClient::ExceptionWithResponse => e
-                if rcode = e.http_code and rbody = e.http_body
-                    ErrorHandling.handle_api_error(rcode, rbody)
-                else
-                    ErrorHandling.handle_restclient_error(e)
-                end
-            rescue RestClient::Exception, Errno::ECONNREFUSED => e
-                ErrorHandling.handle_restclient_error(e)
-            end
-            
-            return response
+            return result
         end
 
         def create(username, password)
@@ -136,52 +103,15 @@ module Simperium
             return ccid.generate(:compact)
         end
 
-        def _request(url, data=nil, headers=nil, method=nil, timeout=nil)
+        def _request(url, data=nil, headers=nil, method=:post, timeout=nil)
+            @@clnt ||= HTTPClient.new
             url = "#{@scheme}://#{@host}/1/#{url}"
-            opts = {:url => url,
-                    :method => :post,
-                    :open_timeout => 30, 
-                    :timeout => 80}
-            
-            if data
-                opts = opts.merge({:payload => data})
+            headers['Content-Type'] = 'application/json'
+            result = @@clnt.request(method, url, query=nil, body=data, extheader=headers)
+            if result.status_code != 200
+              raise StandardError.new("Response code #{result.status_code} received. Debug: #{result.inspect}")
             end
-            
-            if headers.nil?
-                headers = {}
-            end
-            opts = opts.merge({:headers => headers})
-            
-            if method
-                opts = opts.merge({:method => method})
-            end
-            
-            if timeout
-                opts = opts.merge({:timeout => timeout})
-            end
-            
-            begin
-                response = RestClient::Request.execute(opts)
-            rescue SocketError => e
-                ErrorHandling.handle_restclient_error(e)
-            rescue NoMethodError => e
-                if e.message =~ /\WRequestFailed\W/
-                    e = StandardError.new('Unexpected HTTP response code')
-                    ErrorHandling.handle_restclient_error(e)
-                else
-                    raise
-                end
-            rescue RestClient::ExceptionWithResponse => e
-                if rcode = e.http_code and rbody = e.http_body
-                    ErrorHandling.handle_api_error(rcode, rbody)
-                else
-                    ErrorHandling.handle_restclient_error(e)
-                end
-            rescue RestClient::Exception, Errno::ECONNREFUSED => e
-                ErrorHandling.handle_restclient_error(e)
-            end
-
-            return response
+            return result
         end
           
         def index(options={})
